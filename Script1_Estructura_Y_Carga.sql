@@ -191,7 +191,7 @@ SELECT @IdCultivoGranada = IdCultivo FROM dbo.Cultivos WHERE NombreCultivo = 'Gr
 
 -- Caudal: 4.50 Litros por minuto para Olivo, y 6.00 Litros por minuto para Granada
 INSERT INTO dbo.Sectores (NombreSector, NombreEncargado, IdCultivo, PuertoSerial, TarifaAguaReferencial, CaudalBombaLPM, Activo) 
-VALUES ('Sector 1 - Olivo Joven (Pozo 5)', 'Elvis Mamani', @IdCultivoOlivo, 'COM3', 15.50, 4.50, 1);
+VALUES ('Sector 1 - Olivo Joven (Pozo 5)', 'Elvis Mamani', @IdCultivoOlivo, 'COM13', 15.50, 4.50, 1);
 
 INSERT INTO dbo.Sectores (NombreSector, NombreEncargado, IdCultivo, PuertoSerial, TarifaAguaReferencial, CaudalBombaLPM, Activo) 
 VALUES ('Sector 2 - Granada Exportación (Pozo 9)', 'Juan Palos', @IdCultivoGranada, 'COM4', 18.00, 6.00, 1);

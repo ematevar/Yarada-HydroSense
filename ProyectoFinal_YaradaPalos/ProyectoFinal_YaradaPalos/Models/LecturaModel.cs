@@ -3,7 +3,7 @@ using System;
 namespace ProyectoFinal_YaradaPalos.Models
 {
     /// <summary>
-    /// Representa una lectura física obtenida desde los sensores del ESP32.
+    /// Representa una lectura física obtenida desde los sensores del hardware (Arduino Uno / ESP32).
     /// Contiene la lógica agronómica para evaluar las condiciones del suelo de La Yarada.
     /// </summary>
     public class LecturaModel

@@ -10,7 +10,7 @@ using PdfSharp.Drawing;
 namespace ProyectoFinal_YaradaPalos.Controllers
 {
     /// <summary>
-    /// Controlador principal encargado de gestionar la comunicación Serial con el ESP32,
+    /// Controlador principal encargado de gestionar la comunicación Serial con el hardware (Arduino Uno / ESP32),
     /// aplicar las reglas de negocio en tiempo real y persistir los eventos en la BD.
     /// Soporta múltiples puertos en paralelo para varios sectores de cultivo.
     /// </summary>
@@ -324,7 +324,7 @@ namespace ProyectoFinal_YaradaPalos.Controllers
         }
 
         /// <summary>
-        /// Evento asíncrono disparado cuando llegan datos del ESP32 por USB.
+        /// Evento asíncrono disparado cuando llegan datos del hardware (Arduino Uno / ESP32) por USB.
         /// </summary>
         private void SerialPort_DataReceived(object sender, SerialDataReceivedEventArgs e)
         {
@@ -394,6 +394,19 @@ namespace ProyectoFinal_YaradaPalos.Controllers
             catch (Exception ex)
             {
                 OnAlertaRegistrada?.Invoke($"Error procesando telemetría serial en puerto {puerto}: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Simula la recepción de telemetría para un sector monitoreado.
+        /// </summary>
+        public void SimularTelemetria(string puerto, double humedad, double temperatura)
+        {
+            if (sectoresMonitoreados.TryGetValue(puerto, out SectorState sec))
+            {
+                sec.LastTelemetryTime = DateTime.Now;
+                sec.IsOnline = true;
+                ProcesarLecturaSector(sec, humedad, temperatura);
             }
         }
 
@@ -500,8 +513,9 @@ namespace ProyectoFinal_YaradaPalos.Controllers
         {
             if (sec.ModoManual || !sec.IsOnline) return;
 
-            // REGLA 1: Encendido Automático por Humedad Crítica (< HumedadMinima)
-            if (sec.Humedad < sec.HumedadMinima && !sec.BombaEncendida)
+            // REGLA 1: Encendido Automático por Humedad Crítica o Salud Crítica por Déficit (Riego de Emergencia)
+            // Evitar activación si el suelo ya está húmedo o saturado (humedad >= humedadMinima + 20.0)
+            if ((sec.Humedad < sec.HumedadMinima || (sec.Salud < 50.0 && sec.Humedad < sec.HumedadMinima + 20.0)) && !sec.BombaEncendida)
             {
                 sec.BombaEncendida = true;
                 sec.FechaEncendidoBomba = DateTime.Now;
@@ -514,7 +528,10 @@ namespace ProyectoFinal_YaradaPalos.Controllers
                 RegistrarInicioRiegoSectorDB(sec);
 
                 OnEstadoBombaChanged?.Invoke(true);
-                OnAlertaRegistrada?.Invoke($"[{sec.NombreSector}] Riego iniciado automáticamente por estrés hídrico (< {sec.HumedadMinima}%).");
+                string motivo = (sec.Humedad < sec.HumedadMinima) 
+                    ? $"estrés hídrico (< {sec.HumedadMinima}%)" 
+                    : $"salud crítica del cultivo (< 50% - Riego de Emergencia)";
+                OnAlertaRegistrada?.Invoke($"[{sec.NombreSector}] Riego iniciado automáticamente por {motivo}.");
             }
             // SI LA BOMBA YA ESTÁ TRABAJANDO:
             else if (sec.BombaEncendida)

@@ -128,7 +128,9 @@ GO
 CREATE PROCEDURE dbo.sp_CrearOperador
     @Username VARCHAR(50),
     @PasswordTextoPlano VARCHAR(100),
-    @Nombre VARCHAR(100)
+    @Nombre VARCHAR(100),
+    @Celular VARCHAR(20) = NULL,
+    @IdSector INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -147,9 +149,9 @@ BEGIN
     DECLARE @PasswordHashHex VARCHAR(256);
     SET @PasswordHashHex = CONVERT(VARCHAR(256), HASHBYTES('SHA2_256', @PasswordTextoPlano), 2);
 
-    -- Insertar operador activo por defecto
-    INSERT INTO dbo.Usuarios (Username, PasswordHash, Nombre, IdRol, Activo, FechaCreacion)
-    VALUES (@Username, @PasswordHashHex, @Nombre, @IdRolOperador, 1, GETDATE());
+    -- Insertar operador activo por defecto (incluyendo celular y sector)
+    INSERT INTO dbo.Usuarios (Username, PasswordHash, Nombre, Celular, IdRol, IdSector, Activo, FechaCreacion)
+    VALUES (@Username, @PasswordHashHex, @Nombre, @Celular, @IdRolOperador, @IdSector, 1, GETDATE());
 
     -- Retorna el ID asignado al nuevo operador
     SELECT CAST(SCOPE_IDENTITY() AS INT) AS IdUsuarioCreado;
@@ -162,7 +164,9 @@ CREATE PROCEDURE dbo.sp_ModificarOperador
     @Username VARCHAR(50),
     @Nombre VARCHAR(100),
     @PasswordTextoPlano VARCHAR(100) = NULL, -- Parámetro opcional. Si se envía NULL, mantiene la contraseña actual.
-    @Activo BIT = NULL                      -- Parámetro opcional. Si se envía NULL, mantiene el estado actual.
+    @Activo BIT = NULL,                      -- Parámetro opcional. Si se envía NULL, mantiene el estado actual.
+    @Celular VARCHAR(20) = NULL,
+    @IdSector INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -182,10 +186,12 @@ BEGIN
         THROW 50004, 'El nombre de usuario ya está asignado a otra cuenta.', 1;
     END
 
-    -- Actualización de datos generales
+    -- Actualización de datos generales (incluyendo celular y sector)
     UPDATE dbo.Usuarios
     SET Username = @Username,
         Nombre = @Nombre,
+        Celular = @Celular,
+        IdSector = @IdSector,
         Activo = ISNULL(@Activo, Activo)
     WHERE IdUsuario = @IdUsuario;
 
@@ -234,14 +240,18 @@ BEGIN
     SELECT @IdRolOperador = IdRol FROM dbo.Roles WHERE NombreRol = 'Operador';
 
     SELECT 
-        IdUsuario,
-        Username,
-        Nombre,
-        Activo,
-        FechaCreacion
-    FROM dbo.Usuarios
-    WHERE IdRol = @IdRolOperador
-    ORDER BY Nombre ASC;
+        u.IdUsuario,
+        u.Username,
+        u.Nombre,
+        u.Celular,
+        u.IdSector,
+        s.NombreSector,
+        u.Activo,
+        u.FechaCreacion
+    FROM dbo.Usuarios u
+    LEFT JOIN dbo.Sectores s ON u.IdSector = s.IdSector
+    WHERE u.IdRol = @IdRolOperador
+    ORDER BY u.Nombre ASC;
 END
 GO
 
@@ -401,6 +411,9 @@ GO
 
 -- 5.2. sp_ListarTodosLosSectores (Para el CRUD del Administrador, incluye inactivos)
 CREATE PROCEDURE dbo.sp_ListarTodosLosSectores
+    @Activo BIT = NULL,
+    @FechaInicio DATETIME = NULL,
+    @FechaFin DATETIME = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -416,6 +429,15 @@ BEGIN
         s.Activo
     FROM dbo.Sectores s
     INNER JOIN dbo.Cultivos c ON s.IdCultivo = c.IdCultivo
+    WHERE (@Activo IS NULL OR s.Activo = @Activo)
+      AND (
+          @FechaInicio IS NULL OR @FechaFin IS NULL OR
+          EXISTS (
+              SELECT 1 FROM dbo.HistorialRiego hr 
+              WHERE hr.IdSector = s.IdSector 
+                AND hr.FechaHoraInicio BETWEEN @FechaInicio AND @FechaFin
+          )
+      )
     ORDER BY s.NombreSector ASC;
 END
 GO
