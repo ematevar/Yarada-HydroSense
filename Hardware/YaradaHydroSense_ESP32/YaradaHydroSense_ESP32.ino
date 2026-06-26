@@ -1,79 +1,73 @@
 /*
   =================================================================================
-  Yarada HydroSense - Firmware ESP32 para Riego de Precisión IoT
+  Yarada HydroSense - Firmware ESP32 con DHT22 (PRODUCCIÓN REAL)
   Hardware Engineer & Firmware Specialist
-  
-  Descripción:
-  Este firmware inicializa el bus serial del ESP32 a 115200 baudios, simula las 
-  variaciones físicas de humedad y temperatura del suelo en La Yarada Los Palos,
-  y responde activando/desactivando el Relé de la bomba hídrica en base a las 
-  instrucciones seriales de la aplicación C# WinForms.
   =================================================================================
 */
 
-// Usaremos el Pin GPIO 2 (LED integrado en la mayoría de placas de desarrollo ESP32 NodeMCU)
-#define PIN_RELE 2 
+#include "DHT.h"
 
-// Variables globales para simulación física de suelo
-float humedadActual = 32.5;     // Humedad inicial en porcentaje (%)
-float temperaturaActual = 28.0; // Temperatura inicial en grados Celsius (°C)
+// ==========================================
+// ASIGNACIÓN DE PINES SEGUROS
+// ==========================================
+#define PIN_RELE    14  // Salida Digital (Lado izquierdo, seguro para relé)
+#define PIN_DHT     27  // Entrada Digital para DHT22 (Lado derecho de la placa)
+
+// Definimos el tipo de sensor
+#define DHTTYPE DHT22   
+
+// Inicialización de la librería DHT
+DHT dht(PIN_DHT, DHTTYPE);
+
 unsigned long tiempoUltimoEnvio = 0;
-const long intervaloEnvio = 2000; // Frecuencia de envío de telemetría (cada 2 segundos)
+const long intervaloEnvio = 2000; // Telemetría cada 2 segundos
 
 void setup() {
-  // Inicialización del canal de comunicación USB-Serial a 115200 bps
   Serial.begin(115200);
   
-  // Configuración del pin del relé como salida digital
+  // Configuración segura del Relé
   pinMode(PIN_RELE, OUTPUT);
-  digitalWrite(PIN_RELE, LOW); // Apagado por defecto al arrancar el hardware
+  digitalWrite(PIN_RELE, LOW); // Bomba apagada por defecto
+  
+  // Inicializar el sensor DHT22
+  dht.begin();
 }
 
 void loop() {
   unsigned long tiempoActual = millis();
 
-  // Enviar telemetría periódica al puerto serie
+  // 1. TRANSMISIÓN DE TELEMETRÍA REAL
   if (tiempoActual - tiempoUltimoEnvio >= intervaloEnvio) {
     tiempoUltimoEnvio = tiempoActual;
 
-    // Simulación del comportamiento físico de la parcela
-    if (digitalRead(PIN_RELE) == HIGH) {
-      // Si la bomba está encendida, la humedad aumenta
-      humedadActual += random(10, 25) / 10.0; // Sube entre +1.0% y +2.5% por ciclo
-      if (humedadActual > 100.0) humedadActual = 100.0;
-      
-      // El agua enfría sutilmente el suelo
-      temperaturaActual -= random(1, 4) / 10.0; // Baja entre -0.1°C y -0.4°C
-      if (temperaturaActual < 15.0) temperaturaActual = 15.0;
-    } 
-    else {
-      // Si la bomba está apagada, la humedad cae lentamente debido al calor árido de Tacna
-      humedadActual -= random(5, 15) / 10.0;  // Baja entre -0.5% y -1.5%
-      if (humedadActual < 5.0) humedadActual = 5.0;
+    // Lectura de los parámetros reales del DHT22
+    float humedadAire = dht.readHumidity();
+    float temperaturaAire = dht.readTemperature(); // En grados Celsius
 
-      // El sol tacneño calienta el suelo
-      temperaturaActual += random(1, 4) / 10.0; // Sube entre +0.1°C y +0.4°C
-      if (temperaturaActual > 45.0) temperaturaActual = 45.0;
+    // Control de fallas: Si el sensor se desconecta o falla la lectura
+    if (isnan(humedadAire) || isnan(temperaturaAire)) {
+      // Enviamos flags de error controlados para que C# sepa que el hardware falló
+      humedadAire = -99.9;
+      temperaturaAire = -99.9;
     }
 
-    // Transmitir cadena formateada esperada por RiegoController.cs: MAC|Humedad|Temperatura
-    // Dirección MAC ficticia registrada para pruebas en Script 1: AA:BB:CC:11:22:33
+    // --- Envío de la Trama Estricta a WinForms ---
+    // Formato requerido: MAC|Humedad|Temperatura
     Serial.print("AA:BB:CC:11:22:33|");
-    Serial.print(humedadActual, 1);
+    Serial.print(humedadAire, 1);
     Serial.print("|");
-    Serial.println(temperaturaActual, 1);
+    Serial.println(temperaturaAire, 1);
   }
 
-  // Escucha activa de comandos serie procedentes de la aplicación WinForms (PC)
+  // 2. ESCUCHA ACTIVA DE COMANDOS SERIALES
   if (Serial.available() > 0) {
     char comando = Serial.read();
 
-    // Toma de acción sobre el hardware
     if (comando == 'E') {
-      digitalWrite(PIN_RELE, HIGH); // Cierra el contacto del Relé (Enciende el LED integrado)
+      digitalWrite(PIN_RELE, HIGH); // Enciende Bomba
     } 
     else if (comando == 'A') {
-      digitalWrite(PIN_RELE, LOW);  // Abre el contacto del Relé (Apaga el LED integrado)
+      digitalWrite(PIN_RELE, LOW);  // Apaga Bomba
     }
   }
 }
