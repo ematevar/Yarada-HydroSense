@@ -35,33 +35,14 @@ except ImportError:
 # Agrega o modifica esta lista para simular la cantidad de dispositivos que desees.
 DISPOSITIVOS = [
     {
-        "nombre": "Sector Olivo (Pozo 5)",
-        "puerto": "COM12",          # Puerto COM virtual donde se conectará el simulador
-        "mac": "AA:BB:CC:11:22:33", # MAC registrada en el sistema
+        "nombre": "Sector 3 - Granada Real (Pozo 14)",
+        "puerto": "COM13",          # Puerto COM virtual donde se conectará el simulador (par con COM14 en C#)
+        "mac": "AA:BB:CC:11:22:33", # MAC real configurada en el firmware de Arduino
         "humedad_inicial": 45.0,    # Porcentaje de humedad inicial
         "temp_inicial": 24.5,       # Temperatura inicial
         "tasa_secado": 0.05,        # Disminución de humedad por segundo
         "tasa_riego": 1.2,          # Incremento de humedad por segundo cuando la bomba está activa
-    },
-    {
-        "nombre": "Sector Granada (Pozo 9)",
-        "puerto": "COM14",
-        "mac": "DD:EE:FF:44:55:66",
-        "humedad_inicial": 35.0,
-        "temp_inicial": 26.2,
-        "tasa_secado": 0.08,
-        "tasa_riego": 1.5,
-    },
-    # Puedes añadir más sectores aquí:
-    # {
-        # "nombre": "Sector Palto (Pozo 2)",
-        # "puerto": "COM16",
-        # "mac": "11:22:33:44:55:66",
-        # "humedad_inicial": 50.0,
-        # "temp_inicial": 22.0,
-        # "tasa_secado": 0.03,
-        # "tasa_riego": 1.0,
-    # }
+    }
 ]
 
 INTERVALO_ENVIO_SEGUNDOS = 2.0  # Telemetría cada 2 segundos, igual al Arduino

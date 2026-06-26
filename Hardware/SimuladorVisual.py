@@ -38,31 +38,13 @@ except ImportError:
 # ==========================================
 DISPOSITIVOS = [
     {
-        "nombre": "Sector Olivo (Pozo 5)",
-        "puerto": "COM12",          # Conectado a COM11 en la app WinForms
-        "mac": "AA:BB:CC:11:22:33",
+        "nombre": "Sector 3 - Granada Real (Pozo 14)",
+        "puerto": "COM13",          # Conectado a COM14 en la app WinForms (puerto virtual par)
+        "mac": "AA:BB:CC:11:22:33", # MAC real configurada en el firmware de Arduino
         "humedad_inicial": 45.0,
         "temp_inicial": 24.5,
         "tasa_secado": 0.05,
         "tasa_riego": 1.2,
-    },
-    {
-        "nombre": "Sector Granada (Pozo 9)",
-        "puerto": "COM14",          # Conectado a COM13 en la app WinForms
-        "mac": "DD:EE:FF:44:55:66",
-        "humedad_inicial": 35.0,
-        "temp_inicial": 26.2,
-        "tasa_secado": 0.08,
-        "tasa_riego": 1.5,
-    },
-    {
-        "nombre": "Sector Palto (Pozo 2)",
-        "puerto": "COM16",          # Conectado a COM15 en la app WinForms
-        "mac": "11:22:33:44:55:66",
-        "humedad_inicial": 52.0,
-        "temp_inicial": 21.8,
-        "tasa_secado": 0.03,
-        "tasa_riego": 1.0,
     }
 ]
 
