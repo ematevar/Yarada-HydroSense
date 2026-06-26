@@ -21,19 +21,37 @@
 DHT dht(PIN_DHT, DHTTYPE);
 
 // ==========================================
-// CONSTANTES DE CALIBRACIÓN DEL SENSOR CAPACITIVO v1.2
+// IDENTIFICADOR ÚNICO DE DISPOSITIVO (MAC EMULADA)
+// ==========================================
+// IMPORTANTE: Cada Arduino Uno físico debe programarse con su propia MAC única
+// para evitar colisiones e inconsistencias de datos en la base de datos SQL.
+// Ejemplos:
+// Sector 1 - Olivo Joven (Pozo 5): "AA:BB:CC:11:22:33"
+// Sector 2 - Granada Exportación (Pozo 9): "DD:EE:FF:44:55:66"
+#define MAC_DISPOSITIVO "AA:BB:CC:11:22:33"
+
+// ==========================================
+// CONSTANTES DE CALIBRACIÓN Y DIAGNÓSTICO
 // (Ajustadas para el ADC de 10 bits de Arduino Uno: 0 - 1023)
 // ==========================================
 const int VALOR_SECO = 550;   // Lectura analógica en aire seco (0% humedad)
 const int VALOR_HUMEDO = 250; // Lectura analógica sumergido en agua (100% humedad)
 
+// Rango esperado del sensor capacitivo v1.2 conectado (evita lecturas espurias/desconexión)
+const int RANGO_MIN_VALIDO = 200;
+const int RANGO_MAX_VALIDO = 800;
+
 // ==========================================
-// CONFIGURACIÓN DE LÓGICA DEL RELÉ (BOMBA)
+// CONFIGURACIÓN DE LÓGICA DEL RELÉ (BOMBA) Y WATCHDOG
 // ==========================================
 // La mayoría de módulos de relé comerciales para Arduino son Active Low (se activan con LOW).
 // Si tu módulo de relé físico es Active High, invierte estos valores (ENCENDIDO = HIGH, APAGADO = LOW).
 #define RELE_ENCENDIDO  LOW
 #define RELE_APAGADO    HIGH
+
+// Watchdog por hardware local: tiempo máximo de riego continuo (seguridad)
+const unsigned long MAX_RIEGO_MS = 30UL * 60 * 1000; // 30 minutos máximo
+unsigned long tiempoRelayOn = 0;
 
 unsigned long tiempoUltimoEnvio = 0;
 const long intervaloEnvio = 2000; // Telemetría cada 2 segundos
@@ -75,30 +93,38 @@ void loop() {
     if (isnan(temperaturaAire)) {
       temperaturaAire = -99.9;
     }
-    // Control de fallas para el sensor analógico (ej. desconexión / fuera de rango)
-    if (valorAnalogo == 0 || valorAnalogo > 1000) {
-      // Valor irreal en un sensor capacitivo v1.2 (debería rondar entre 200 y 700)
+    // Control de fallas robusto para el sensor analógico (ej. desconexión, cable suelto o flotante)
+    bool sensorFallido = (valorAnalogo < RANGO_MIN_VALIDO || valorAnalogo > RANGO_MAX_VALIDO);
+    if (sensorFallido) {
       humedadSuelo = -99.9;
     }
 
     // --- Envío de la Trama Estricta a WinForms ---
     // Formato requerido por RiegoController: MAC|Humedad|Temperatura
-    // Como Arduino Uno no cuenta con MAC por hardware, emulamos la MAC del Sector 1
-    Serial.print("AA:BB:CC:11:22:33|");
+    Serial.print(MAC_DISPOSITIVO);
+    Serial.print("|");
     Serial.print(humedadSuelo, 1);
     Serial.print("|");
     Serial.println(temperaturaAire, 1);
   }
 
-  // 2. ESCUCHA ACTIVA DE COMANDOS SERIALES (Enviados por RiegoController)
-  if (Serial.available() > 0) {
+  // 2. ESCUCHA ACTIVA DE COMANDOS SERIALES (Bucle para procesar buffer de entrada sin pérdidas)
+  while (Serial.available() > 0) {
     char comando = Serial.read();
 
     if (comando == 'E') {
       digitalWrite(PIN_RELE, RELE_ENCENDIDO); // Enciende Bomba (Relé)
+      tiempoRelayOn = millis();               // Registrar inicio para watchdog local
     } 
     else if (comando == 'A') {
       digitalWrite(PIN_RELE, RELE_APAGADO);  // Apaga Bomba (Relé)
     }
+  }
+
+  // 3. WATCHDOG LOCAL DE SEGURIDAD (Apagado por tiempo límite continuo)
+  if (digitalRead(PIN_RELE) == RELE_ENCENDIDO && (tiempoActual - tiempoRelayOn) >= MAX_RIEGO_MS) {
+    digitalWrite(PIN_RELE, RELE_APAGADO); // Apagado forzado por seguridad
+    Serial.print(MAC_DISPOSITIVO);
+    Serial.println("|TIMEOUT|RELAY_FORCED_OFF");
   }
 }
