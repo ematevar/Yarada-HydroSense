@@ -35,13 +35,76 @@ except ImportError:
 # Agrega o modifica esta lista para simular la cantidad de dispositivos que desees.
 DISPOSITIVOS = [
     {
+        "nombre": "Sector 1 - Olivo Joven (Pozo 5)",
+        "puerto": "COM4",            # Conectado a COM3 en C# (par COM3 <-> COM4)
+        "mac": "AA:BB:CC:11:22:01",
+        "humedad_inicial": 45.0,
+        "temp_inicial": 24.5,
+        "tasa_secado": 0.05,
+        "tasa_riego": 1.2,
+    },
+    {
+        "nombre": "Sector 2 - Granada Exportacion (Pozo 9)",
+        "puerto": "COM12",           # Conectado a COM11 en C# (par COM11 <-> COM12)
+        "mac": "AA:BB:CC:11:22:02",
+        "humedad_inicial": 35.0,
+        "temp_inicial": 26.2,
+        "tasa_secado": 0.08,
+        "tasa_riego": 1.5,
+    },
+    {
         "nombre": "Sector 3 - Granada Real (Pozo 14)",
-        "puerto": "COM13",          # Puerto COM virtual donde se conectará el simulador (par con COM14 en C#)
-        "mac": "AA:BB:CC:11:22:33", # MAC real configurada en el firmware de Arduino
-        "humedad_inicial": 45.0,    # Porcentaje de humedad inicial
-        "temp_inicial": 24.5,       # Temperatura inicial
-        "tasa_secado": 0.05,        # Disminución de humedad por segundo
-        "tasa_riego": 1.2,          # Incremento de humedad por segundo cuando la bomba está activa
+        "puerto": "COM13",           # Conectado a COM14 en C# (par COM13 <-> COM14)
+        "mac": "AA:BB:CC:11:22:33",  # MAC real hardcodeada en Arduino
+        "humedad_inicial": 50.0,
+        "temp_inicial": 25.0,
+        "tasa_secado": 0.06,
+        "tasa_riego": 1.3,
+    },
+    {
+        "nombre": "Sector 4 - Zapallo Premium (Pozo 2)",
+        "puerto": "COM16",           # Conectado a COM15 en C# (par COM15 <-> COM16)
+        "mac": "AA:BB:CC:11:22:04",
+        "humedad_inicial": 52.0,
+        "temp_inicial": 21.8,
+        "tasa_secado": 0.03,
+        "tasa_riego": 1.0,
+    },
+    {
+        "nombre": "Sector 5 - Olivo Centenario (Pozo 4)",
+        "puerto": "COM18",           # Conectado a COM17 en C# (par COM17 <-> COM18)
+        "mac": "AA:BB:CC:11:22:05",
+        "humedad_inicial": 40.0,
+        "temp_inicial": 23.0,
+        "tasa_secado": 0.04,
+        "tasa_riego": 1.1,
+    },
+    {
+        "nombre": "Sector 6 - Granada Tradicional (Pozo 7)",
+        "puerto": "COM20",           # Conectado a COM19 en C# (par COM19 <-> COM20)
+        "mac": "AA:BB:CC:11:22:06",
+        "humedad_inicial": 38.0,
+        "temp_inicial": 27.5,
+        "tasa_secado": 0.07,
+        "tasa_riego": 1.4,
+    },
+    {
+        "nombre": "Sector 7 - Zapallo Criollo (Pozo 8)",
+        "puerto": "COM22",           # Conectado a COM21 en C# (par COM21 <-> COM22)
+        "mac": "AA:BB:CC:11:22:07",
+        "humedad_inicial": 48.0,
+        "temp_inicial": 22.5,
+        "tasa_secado": 0.04,
+        "tasa_riego": 1.0,
+    },
+    {
+        "nombre": "Sector 8 - Olivo Organico (Pozo 11)",
+        "puerto": "COM24",           # Conectado a COM23 en C# (par COM23 <-> COM24)
+        "mac": "AA:BB:CC:11:22:08",
+        "humedad_inicial": 55.0,
+        "temp_inicial": 24.0,
+        "tasa_secado": 0.05,
+        "tasa_riego": 1.2,
     }
 ]
 
